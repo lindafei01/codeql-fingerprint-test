@@ -2,27 +2,28 @@
 # Script for analyzing vulnerability differences between commits using CodeQL
 
 # Configuration
-REPO_PATH="/path/to/your/repository"
-COMMIT_ID="abc123"  # The commit you want to analyze
-LANGUAGE="python"  # Change to your language (javascript, java, cpp, csharp, python, etc.)
-QUERY_SUITE="security-extended"  # You can use security-and-quality, security-extended, etc.
+REPO_PATH="~/test_fingerpoint"
+BASE_COMMIT="8850e534f133f4dce66a7a3e7dd3ee3ebc9ba00e"  # 基础提交 (safe app)
+TARGET_COMMIT="a3e3f71eefc39b580867a746cc17f38a9bdf3438"  # 目标提交 (variable undefined)
+LANGUAGE="python"
+QUERY_SUITE="security-extended"
 
-# Step 1: Create a CodeQL database for the version before the commit
-echo "Creating CodeQL database for the version before the commit..."
+# Step 1: Create a CodeQL database for the base commit
+echo "Creating CodeQL database for the base commit..."
 cd $REPO_PATH
-git checkout $COMMIT_ID~1  # checkout the commit before the target
+git checkout $BASE_COMMIT
 codeql database create ../codeql_db_before --language=$LANGUAGE --source-root .
 
-# Step 2: Create a CodeQL database for the version after the commit
-echo "Creating CodeQL database for the version after the commit..."
-git checkout $COMMIT_ID  # checkout the target commit
+# Step 2: Create a CodeQL database for the target commit
+echo "Creating CodeQL database for the target commit..."
+git checkout $TARGET_COMMIT
 codeql database create ../codeql_db_after --language=$LANGUAGE --source-root .
 
 # Step 3: Run the analysis on both databases
-echo "Running CodeQL analysis on the version before the commit..."
+echo "Running CodeQL analysis on the base commit..."
 codeql database analyze ../codeql_db_before --format=sarif-latest --output=../results_before.sarif $QUERY_SUITE
 
-echo "Running CodeQL analysis on the version after the commit..."
+echo "Running CodeQL analysis on the target commit..."
 codeql database analyze ../codeql_db_after --format=sarif-latest --output=../results_after.sarif $QUERY_SUITE
 
 # Step 4: Compare the results using a more robust approach that handles code shifts
@@ -92,13 +93,15 @@ after_fingerprints = extract_fingerprints(after_data)
 # Find new vulnerability fingerprints
 new_fingerprint_keys = set(after_fingerprints.keys()) - set(before_fingerprints.keys())
 
-# Get details about the modified files in this commit
+# Get details about the modified files between these two commits
 os.chdir('$REPO_PATH')
-modified_files = subprocess.check_output(['git', 'diff', '--name-only', '$COMMIT_ID~1', '$COMMIT_ID']).decode('utf-8').splitlines()
+modified_files = subprocess.check_output(['git', 'diff', '--name-only', '$BASE_COMMIT', '$TARGET_COMMIT']).decode('utf-8').splitlines()
 
 # Display results
 new_issues_count = sum(len(after_fingerprints[key]) for key in new_fingerprint_keys)
-print(f"Found {new_issues_count} new potential vulnerabilities in commit {'$COMMIT_ID'}")
+print(f"Found {new_issues_count} new potential vulnerabilities between commits")
+print(f"Base commit: $BASE_COMMIT")
+print(f"Target commit: $TARGET_COMMIT")
 
 for key in new_fingerprint_keys:
     for issue in after_fingerprints[key]:
@@ -106,10 +109,10 @@ for key in new_fingerprint_keys:
         relative_path = issue['file']
         if relative_path in modified_files:
             print(f"[{issue['rule_id']}] {issue['file']}:{issue['line']}: {issue['message']}")
-            print(f"  - This issue appears in a file modified by the commit")
+            print(f"  - This issue appears in a file modified between the commits")
         else:
             print(f"[{issue['rule_id']}] {issue['file']}:{issue['line']}: {issue['message']}")
-            print(f"  - This file was NOT modified in this commit (possible false positive)")
+            print(f"  - This file was NOT modified between these commits (possible false positive)")
 
 print("\nNote: This analysis uses CodeQL's fingerprinting to identify unique issues")
 print("rather than just comparing line numbers, which helps handle code shifts.")
