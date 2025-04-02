@@ -2,29 +2,38 @@
 # Script for analyzing vulnerability differences between commits using CodeQL
 
 # Configuration
-REPO_PATH="~/test_fingerpoint"
-BASE_COMMIT="8850e534f133f4dce66a7a3e7dd3ee3ebc9ba00e"  # 基础提交 (safe app)
-TARGET_COMMIT="a3e3f71eefc39b580867a746cc17f38a9bdf3438"  # 目标提交 (variable undefined)
+REPO_PATH="/home/ubuntu/test_fingerpoint"  # 使用绝对路径
+BASE_COMMIT="8850e534f133f4dce66a7a3e7dd3ee3ebc9ba00e"
+TARGET_COMMIT="a3e3f71eefc39b580867a746cc17f38a9bdf3438"
 LANGUAGE="python"
-QUERY_SUITE="security-extended"
+QUERY_SUITE="codeql/python-queries:python-security-extended.qls"  # 使用完整路径
+
+# 清理旧数据库和结果文件
+rm -rf /home/ubuntu/codeql_db_before
+rm -rf /home/ubuntu/codeql_db_after
+rm -f /home/ubuntu/results_before.sarif
+rm -f /home/ubuntu/results_after.sarif
+
+# 保存未提交的更改
+cd "$REPO_PATH" || { echo "Error: $REPO_PATH directory not found"; exit 1; }
+git stash
 
 # Step 1: Create a CodeQL database for the base commit
 echo "Creating CodeQL database for the base commit..."
-cd $REPO_PATH
-git checkout $BASE_COMMIT
-codeql database create ../codeql_db_before --language=$LANGUAGE --source-root .
+git checkout "$BASE_COMMIT"
+codeql database create /home/ubuntu/codeql_db_before --language="$LANGUAGE" --source-root .
 
 # Step 2: Create a CodeQL database for the target commit
 echo "Creating CodeQL database for the target commit..."
-git checkout $TARGET_COMMIT
-codeql database create ../codeql_db_after --language=$LANGUAGE --source-root .
+git checkout "$TARGET_COMMIT"
+codeql database create /home/ubuntu/codeql_db_after --language="$LANGUAGE" --source-root .
 
 # Step 3: Run the analysis on both databases
 echo "Running CodeQL analysis on the base commit..."
-codeql database analyze ../codeql_db_before --format=sarif-latest --output=../results_before.sarif $QUERY_SUITE
+codeql database analyze /home/ubuntu/codeql_db_before --format=sarif-latest --output=/home/ubuntu/results_before.sarif "$QUERY_SUITE"
 
 echo "Running CodeQL analysis on the target commit..."
-codeql database analyze ../codeql_db_after --format=sarif-latest --output=../results_after.sarif $QUERY_SUITE
+codeql database analyze /home/ubuntu/codeql_db_after --format=sarif-latest --output=/home/ubuntu/results_after.sarif "$QUERY_SUITE"
 
 # Step 4: Compare the results using a more robust approach that handles code shifts
 echo "Comparing results..."
@@ -36,10 +45,10 @@ import subprocess
 from collections import defaultdict
 
 # Load SARIF files
-with open('../results_before.sarif', 'r') as f:
+with open('/home/ubuntu/results_before.sarif', 'r') as f:
     before_data = json.load(f)
     
-with open('../results_after.sarif', 'r') as f:
+with open('/home/ubuntu/results_after.sarif', 'r') as f:
     after_data = json.load(f)
 
 # Function to extract code fingerprints from results
@@ -117,5 +126,8 @@ for key in new_fingerprint_keys:
 print("\nNote: This analysis uses CodeQL's fingerprinting to identify unique issues")
 print("rather than just comparing line numbers, which helps handle code shifts.")
 EOF
+
+# 恢复未提交的更改
+git stash pop || true
 
 echo "Analysis complete!"
