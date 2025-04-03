@@ -15,5 +15,5 @@ if __name__ == "__main__":
     a = 1
     b = 1
     c = 1
-    print(d)
+    d = 2
     main()
