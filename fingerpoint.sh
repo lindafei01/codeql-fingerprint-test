@@ -3,8 +3,8 @@
 
 # Configuration
 REPO_PATH="/home/ubuntu/test_fingerpoint"  # 使用绝对路径
-BASE_COMMIT="8850e534f133f4dce66a7a3e7dd3ee3ebc9ba00e"
-TARGET_COMMIT="6711a6eeb975850bbf6c4ae406aaee3259ee1b89"
+BASE_COMMIT="6711a6eeb975850bbf6c4ae406aaee3259ee1b89"
+TARGET_COMMIT="bb782126f83eef3ada80183ced1303df549edbaa"
 LANGUAGE="python"
 QUERY_SUITE="/home/ubuntu/.codeql/packages/codeql/python-queries/1.4.5/codeql-suites/python-security-and-quality.qls"
 
