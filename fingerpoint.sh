@@ -6,7 +6,7 @@ REPO_PATH="/home/ubuntu/test_fingerpoint"  # 使用绝对路径
 BASE_COMMIT="8850e534f133f4dce66a7a3e7dd3ee3ebc9ba00e"
 TARGET_COMMIT="5b1e3e1d786a8c840870083068af25ea1c849b36"
 LANGUAGE="python"
-QUERY_SUITE="/home/ubuntu/.codeql/packages/codeql/python-queries/1.4.5/codeql-suites/python-security-extended.qls"
+QUERY_SUITE="/home/ubuntu/.codeql/packages/codeql/python-queries/1.4.5/codeql-suites/python-security-and-quality.qls"
 
 # 清理旧数据库和结果文件
 rm -rf /home/ubuntu/codeql_db_before
